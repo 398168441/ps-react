@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint --ext .js .ts,.jsx,.tsx --fix --quiet ./packages"
+    "lint": "eslint --ext .js,.ts,.jsx,.tsx --fix --quiet ./packages"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +20,7 @@
     "eslint-plugin-prettier": "^4.2.1",
     "husky": "^8.0.3",
     "prettier": "^2.8.8",
+    "rollup": "^3.25.2",
     "typescript": "^5.1.3"
   }
 }
