@@ -50,7 +50,15 @@ export class FiberNode {
 	}
 }
 
-//	定义整个根FiberNode
+/**
+ * 定义整个根Fiber
+ *
+ * FiberRootNode  -current->  hostRootFiber
+ * hostRootFiber -stateNode-> FiberRootNode
+ *
+ * hostRootFiber -child->  App Fiber
+ * App Fiber     -return-> hostRootFiber
+ */
 export class FiberRootNode {
 	container: Container
 	current: FiberNode
@@ -79,6 +87,7 @@ export function createWorkInProgress(current: FiberNode, pendingProps: Props) {
 		wip.pendingProps = pendingProps
 		wip.flags = NoFlags //	清除之前的副作用
 	}
+	//	复用current
 	wip.type = current.type
 	wip.updateQueue = current.updateQueue
 	wip.child = current.child

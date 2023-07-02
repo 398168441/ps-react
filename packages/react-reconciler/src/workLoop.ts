@@ -16,12 +16,23 @@ function prepareFreshStack(root: FiberRootNode) {
 	workInProgress = createWorkInProgress(root.current, {})
 }
 
+// 调度功能
 export function scheduleUpdateOnFiber(fiber: FiberNode) {
-	// 调度功能
 	const root = markUpdateFromFiberToRoot(fiber)
+	//	从FiberRootNode开始调度
 	renderRoot(root)
 }
 
+/**
+ * 找到根节点
+ * 更新有几种方式
+ * 1、ReactDom.createRoot(rootElement).render(<App/>)
+ * 2、class Component this.setState
+ * 3、Function Component setState
+ * 第1种是从FiberRootNode开始
+ * 第2、3会从某一个节点开始
+ * 所以需要先从根据开始节点往上，找到根FiberRootNode
+ */
 function markUpdateFromFiberToRoot(fiber: FiberNode) {
 	let node = fiber
 	let parent = node.return
@@ -35,7 +46,7 @@ function markUpdateFromFiberToRoot(fiber: FiberNode) {
 	return null
 }
 
-// todo 谁来调用
+// 调度方法
 function renderRoot(root: FiberRootNode) {
 	// 1、初始化
 	prepareFreshStack(root)
@@ -46,12 +57,15 @@ function renderRoot(root: FiberRootNode) {
 			workLoop()
 			break
 		} catch (error) {
-			console.warn('workLoop发生错误', error)
+			if (__DEV__) {
+				console.warn('workLoop发生错误', error)
+			}
 			workInProgress = null
 		}
 	} while (true)
 }
 
+//	调度的循环
 function workLoop() {
 	while (workInProgress !== null) {
 		performUnitOfWork(workInProgress)

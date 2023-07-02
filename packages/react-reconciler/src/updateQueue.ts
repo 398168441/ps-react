@@ -42,7 +42,6 @@ export const processUpdateQueue = <State>(
 	const result: ReturnType<typeof processUpdateQueue<State>> = {
 		memoizedState: baseState
 	}
-
 	if (pendingUpdate !== null) {
 		const action = pendingUpdate.action
 		if (action instanceof Function) {
