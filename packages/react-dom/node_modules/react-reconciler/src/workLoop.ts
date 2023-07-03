@@ -13,7 +13,10 @@ import {commitMutationEffects} from './commitWork'
 // 先定义一个全局的指针，指向正在工作的fiberNode
 let workInProgress: FiberNode | null = null
 
-// 把workInProgress指向第一个需要遍历的fiberNode
+/**
+ * 1、创建workInProgress
+ * 2、并把workInProgress指向第一个需要遍历的fiberNode
+ */
 function prepareFreshStack(root: FiberRootNode) {
 	workInProgress = createWorkInProgress(root.current, {})
 }
@@ -21,7 +24,7 @@ function prepareFreshStack(root: FiberRootNode) {
 // 调度功能
 export function scheduleUpdateOnFiber(fiber: FiberNode) {
 	const root = markUpdateFromFiberToRoot(fiber)
-	//	从FiberRootNode开始调度
+	//	从FiberRootNode开始执行render阶段
 	renderRoot(root)
 }
 
@@ -48,7 +51,7 @@ function markUpdateFromFiberToRoot(fiber: FiberNode) {
 	return null
 }
 
-// 调度方法
+// 调度方法 render阶段
 function renderRoot(root: FiberRootNode) {
 	// 1、初始化
 	prepareFreshStack(root)
@@ -66,16 +69,21 @@ function renderRoot(root: FiberRootNode) {
 		}
 	} while (true)
 
-	// 执行workLoop后会得到一颗操作后的workInProgress Fiber树
+	// render阶段完成以后，会得到一颗操作后的workInProgress Fiber树
+	// 并把这颗Fiber树挂载FiberRootNode的finishedWork上
 	const finishedWork = root.current.alternate
 	root.finishedWork = finishedWork
 
-	//	根据wip Fiber树和树中的flags 执行具体的DOM操作
+	/**
+	 * 根据wip Fiber树和树中的flags 执行具体的DOM操作
+	 * commit阶段开始
+	 */
 	commitRoot(root)
 }
 
 // 开启commit阶段
 function commitRoot(root: FiberRootNode) {
+	//	这里的finishedWork就是执行操作后的workInProgress Fiber树
 	const finishedWork = root.finishedWork
 
 	//	如果finishedWork没有，则不会执行commit阶段
@@ -111,7 +119,10 @@ function commitRoot(root: FiberRootNode) {
 	}
 }
 
-//	调度的循环
+/**
+ * 调度的循环
+ * DFS 深度优先遍历的方式 递归
+ */
 function workLoop() {
 	while (workInProgress !== null) {
 		performUnitOfWork(workInProgress)
@@ -125,7 +136,7 @@ function performUnitOfWork(fiber: FiberNode) {
 	fiber.memoizedProps = fiber.pendingProps
 
 	if (next === null) {
-		// 2、没有子节点就遍历兄弟节点
+		// 2、没有子节点就遍历兄弟节点 兄弟节点遍历完就继续往上执行completeWork
 		completeUnitOfWork(fiber)
 	} else {
 		/**
@@ -142,12 +153,12 @@ function completeUnitOfWork(fiber: FiberNode) {
 		completeWork(node)
 		//	执行完completeWork，只需要看sibling存不存在
 		const sibling = node.sibling
-		//	如果sibling存在，就把sibling赋值给workInProgress，继续执行workLoop
+		//	1、如果sibling存在，就把sibling赋值给workInProgress，继续执行workLoop
 		if (sibling !== null) {
 			workInProgress = sibling
 			return
 		}
-		//	如果不存在兄弟节点，则把node.return赋值给node，继续执行do while循环，完成父节点的completeWork
+		//	2、如果不存在兄弟节点，则把node.return赋值给node，继续执行do while循环，完成父节点的completeWork
 		node = node.return
 		workInProgress = node
 	} while (node !== null)

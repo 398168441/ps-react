@@ -37,7 +37,7 @@ export function updateContainer(
 		hostRootFiber.updateQueue as UpdateQueue<ReactElementType | null>,
 		update
 	)
-	// 调度
+	// 调度 workLoop中
 	scheduleUpdateOnFiber(hostRootFiber)
 	return element
 }

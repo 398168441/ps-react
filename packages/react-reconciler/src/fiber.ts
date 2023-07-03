@@ -44,7 +44,7 @@ export class FiberNode {
 		//	作为工作单元
 		this.pendingProps = pendingProps //	工作开始时的props
 		this.memoizedProps = null //	工作完成后的props
-		this.memoizedState = null
+		this.memoizedState = null // 对于FunctionComponent的memoizedState 指向hoosk链表(以链表的数据结构保存hooks)
 		this.updateQueue = null
 
 		this.alternate = null //	current <-> workInProgress
@@ -75,7 +75,7 @@ export class FiberRootNode {
 	}
 }
 
-//	创建workInProgress
+//	根据current 来创建workInProgress
 export function createWorkInProgress(current: FiberNode, pendingProps: Props) {
 	let wip = current.alternate
 
