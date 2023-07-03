@@ -63,6 +63,13 @@ function renderRoot(root: FiberRootNode) {
 			workInProgress = null
 		}
 	} while (true)
+
+	// 执行workLoop后会得到一颗操作后的workInProgress Fiber树
+	const finishedWork = root.current.alternate
+	root.finishedWork = finishedWork
+
+	//	根据wip Fiber树和树中的flags 执行具体的DOM操作
+	//commitRoot(root)
 }
 
 //	调度的循环
@@ -75,7 +82,7 @@ function workLoop() {
 //	执行工作单元
 function performUnitOfWork(fiber: FiberNode) {
 	//	next 是这个fiber的子fiber 或者没有就为null
-	const next: any = beginWork(fiber)
+	const next = beginWork(fiber)
 	fiber.memoizedProps = fiber.pendingProps
 
 	if (next === null) {
