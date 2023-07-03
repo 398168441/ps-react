@@ -1,3 +1,4 @@
+import {MutationMask, NoFlags} from './fiberFlags'
 /**
  * 完整的工作循环的文件
  */
@@ -7,6 +8,7 @@ import {beginWork} from './beginWork'
 import {completeWork} from './completeWork'
 
 import {FiberNode} from './fiber'
+import {commitMutationEffects} from './commitMutation'
 
 // 先定义一个全局的指针，指向正在工作的fiberNode
 let workInProgress: FiberNode | null = null
@@ -69,7 +71,43 @@ function renderRoot(root: FiberRootNode) {
 	root.finishedWork = finishedWork
 
 	//	根据wip Fiber树和树中的flags 执行具体的DOM操作
-	//commitRoot(root)
+	commitRoot(root)
+}
+
+function commitRoot(root: FiberRootNode) {
+	const finishedWork = root.finishedWork
+
+	//	如果finishedWork没有，则不会执行commit阶段
+	if (finishedWork === null) {
+		return
+	}
+
+	if (__DEV__) {
+		console.warn('commit阶段开始', finishedWork)
+	}
+
+	// 重置root中finishedWork
+	root.finishedWork = null
+
+	// 判断是否存在3个子阶段需要执行的操作
+	// 判断root的subtreeFlags 和 root的flags 是否包含需要操作的flags
+	const subtreeHasEffect =
+		(finishedWork.subtreeFlags & MutationMask) !== NoFlags
+	const rootHasEffect = (finishedWork.flags & MutationMask) !== NoFlags
+	if (subtreeHasEffect || rootHasEffect) {
+		// beforeMutation
+
+		// mutation
+		commitMutationEffects(finishedWork)
+
+		root.current = finishedWork
+
+		// layout
+	} else {
+		// 切换FiberRootNode的current指针
+		// current指向最新的workInProgress Fiber树
+		root.current = finishedWork
+	}
 }
 
 //	调度的循环
