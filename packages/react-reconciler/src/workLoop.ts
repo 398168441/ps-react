@@ -1,7 +1,7 @@
-import {MutationMask, NoFlags} from './fiberFlags'
 /**
  * 完整的工作循环的文件
  */
+import {MutationMask, NoFlags} from './fiberFlags'
 import {HostRoot} from './workTags'
 import {createWorkInProgress, FiberRootNode} from './fiber'
 import {beginWork} from './beginWork'
@@ -74,6 +74,7 @@ function renderRoot(root: FiberRootNode) {
 	commitRoot(root)
 }
 
+// 开启commit阶段
 function commitRoot(root: FiberRootNode) {
 	const finishedWork = root.finishedWork
 

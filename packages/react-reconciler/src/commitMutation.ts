@@ -53,11 +53,13 @@ function commitPlacement(finishedWork: FiberNode) {
 	// 1、找到parent DOM
 	const hostParent = getHostParent(finishedWork)
 	// 2、找到finishedWork 对应的DOM
-	appendPlacementNodeIntoContainer(finishedWork, hostParent)
+	if (hostParent !== null) {
+		appendPlacementNodeIntoContainer(finishedWork, hostParent)
+	}
 }
 
 // 往上找到一个 Host DOM
-function getHostParent(finishedWork: FiberNode): Container {
+function getHostParent(finishedWork: FiberNode): Container | null {
 	let parent = finishedWork.return
 
 	while (parent !== null) {
