@@ -71,6 +71,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 		if (__DEV__) {
 			console.warn('未实现的reconcile类型', newChild)
 		}
+
 		return null
 	}
 }

@@ -8,7 +8,7 @@ import {beginWork} from './beginWork'
 import {completeWork} from './completeWork'
 
 import {FiberNode} from './fiber'
-import {commitMutationEffects} from './commitMutation'
+import {commitMutationEffects} from './commitWork'
 
 // 先定义一个全局的指针，指向正在工作的fiberNode
 let workInProgress: FiberNode | null = null
@@ -149,5 +149,6 @@ function completeUnitOfWork(fiber: FiberNode) {
 		}
 		//	如果不存在兄弟节点，则把node.return赋值给node，继续执行do while循环，完成父节点的completeWork
 		node = node.return
+		workInProgress = node
 	} while (node !== null)
 }

@@ -16,11 +16,11 @@ import {FiberNode} from './fiber'
 
 export const completeWork = (wip: FiberNode) => {
 	const newProps = wip.pendingProps
-	const currrent = wip.alternate
+	const current = wip.alternate
 
 	switch (wip.tag) {
 		case HostComponent:
-			if (currrent !== null && wip.stateNode) {
+			if (current !== null && wip.stateNode) {
 				// update
 			} else {
 				// 1、构建DOM
@@ -31,18 +31,22 @@ export const completeWork = (wip: FiberNode) => {
 				wip.stateNode = instance
 			}
 			bubbleProperties(wip)
-			break
+			return null
 		case HostText:
-			// 1、构建DOM
-			// const instance = createTextInstance(wip.type, newProps)
-			const instance = createTextInstance(wip.type)
-			// 2、文本节点没有子节点，不需要执行append操作
-			wip.stateNode = instance
+			if (current !== null && wip.stateNode) {
+				// update
+			} else {
+				// 1、构建DOM
+				// const instance = createTextInstance(wip.type, newProps)
+				const instance = createTextInstance(newProps.content)
+				// 2、文本节点没有子节点，不需要执行append操作
+				wip.stateNode = instance
+			}
 			bubbleProperties(wip)
-			break
+			return null
 		case HostRoot:
 			bubbleProperties(wip)
-			break
+			return null
 		default:
 			if (__DEV__) {
 				console.warn('未处理的completeWork情况', wip)

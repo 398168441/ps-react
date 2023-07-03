@@ -8,11 +8,14 @@ let nextEffect: FiberNode | null = null
 export function commitMutationEffects(finishedWork: FiberNode) {
 	nextEffect = finishedWork
 
-	// 向下遍历 一直找到没有subtreeFlags的节点结束 再往上遍历
-	const child: FiberNode | null = nextEffect.child
-
 	while (nextEffect !== null) {
-		if ((nextEffect.subtreeFlags & MutationMask) !== NoFlags && child) {
+		// 向下遍历 一直找到没有subtreeFlags的节点结束 再往上遍历
+		const child: FiberNode | null = nextEffect.child
+
+		if (
+			(nextEffect.subtreeFlags & MutationMask) !== NoFlags &&
+			child !== null
+		) {
 			//  存在MutationMask的subtreeFlags就赋值给nextEffect 继续往下
 			nextEffect = child
 		} else {
@@ -22,7 +25,6 @@ export function commitMutationEffects(finishedWork: FiberNode) {
 			 *  向上遍历 DFS 深度优先遍历
 			 */
 			up: while (nextEffect !== null) {
-				// todo 执行操作
 				commitMutaitonEffectsOnFiber(nextEffect)
 				const sibling: FiberNode | null = nextEffect.sibling
 				if (sibling !== null) {
@@ -59,10 +61,10 @@ function commitPlacement(finishedWork: FiberNode) {
 }
 
 // 往上找到一个 Host DOM
-function getHostParent(finishedWork: FiberNode): Container | null {
-	let parent = finishedWork.return
+function getHostParent(fiber: FiberNode): Container | null {
+	let parent = fiber.return
 
-	while (parent !== null) {
+	while (parent) {
 		const parentTag = parent.tag
 		if (parentTag === HostComponent) {
 			return parent.stateNode as Container
@@ -93,7 +95,7 @@ function appendPlacementNodeIntoContainer(
 ) {
 	// 往下找到第一层 Host DOM
 	if (finishedWork.tag === HostComponent || finishedWork.tag === HostText) {
-		appendChildToContainer(finishedWork.stateNode, hostParent)
+		appendChildToContainer(hostParent, finishedWork.stateNode)
 		return
 	}
 
