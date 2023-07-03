@@ -30,6 +30,7 @@ export class FiberNode {
 		this.key = key
 		//	比如一个HostComponent <div> stageNode保存的就是这个div对应的Dom
 		this.stateNode = null
+		// 对于 <App /> FunctionComponent Fiber 他的type就是 <App />
 		this.type = null
 
 		//	节点之间的关系 构成树状结构

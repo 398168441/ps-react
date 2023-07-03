@@ -1,8 +1,9 @@
 import {reconcileChildFibers, mountChildFibers} from './childFibers'
 import {ReactElementType} from 'shared/ReactTypes'
 import {UpdateQueue, processUpdateQueue} from './updateQueue'
-import {HostRoot, HostComponent, HostText} from './workTags'
+import {HostRoot, HostComponent, HostText, FunctionComponent} from './workTags'
 import {FiberNode} from './fiber'
+import {renderWithHooks} from './fiberHooks'
 //  递归中的递阶段
 
 export const beginWork = (wip: FiberNode) => {
@@ -19,6 +20,8 @@ export const beginWork = (wip: FiberNode) => {
 			 * 所以直接return null 开始completeWork
 			 */
 			return null
+		case FunctionComponent:
+			return updateFunctionComponent(wip)
 		default:
 			if (__DEV__) {
 				console.warn('beginWork未实现的类型')
@@ -27,6 +30,12 @@ export const beginWork = (wip: FiberNode) => {
 	}
 
 	return null
+}
+
+function updateFunctionComponent(wip: FiberNode) {
+	const nextChildren = renderWithHooks(wip)
+	reconcileChildren(wip, nextChildren)
+	return wip.child
 }
 
 /**
