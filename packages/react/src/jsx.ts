@@ -89,3 +89,12 @@ export const jsxDEV = (type: ElementType, config: any) => {
 
 	return ReactElement(type, key, ref, props)
 }
+
+//	判断是否是一个有效的ReactElement
+export const isValidElement = (element: any) => {
+	return (
+		typeof element === 'object' &&
+		element !== null &&
+		element.$$typeof === REACT_ELEMENT_TYPE
+	)
+}

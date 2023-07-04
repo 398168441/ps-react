@@ -16,12 +16,12 @@ export default [
 		output: [
 			{
 				file: `${pkgDistPath}/index.js`,
-				name: 'index.js',
+				name: 'ReactDom',
 				format: 'umd'
 			},
 			{
 				file: `${pkgDistPath}/client.js`,
-				name: 'client.js',
+				name: 'client',
 				format: 'umd'
 			}
 		],
@@ -49,5 +49,18 @@ export default [
 				})
 			})
 		]
+	},
+	// test-utils
+	{
+		input: `${pkgPath}/test-utils.ts`,
+		output: {
+			file: `${pkgDistPath}/test-utils.js`,
+			name: 'testUtils',
+			format: 'umd'
+		},
+		// 希望react和react-dom共享【共享数据层__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED】
+		// 所以react-dom打包时不希望包含react的代码
+		external: ['react', 'react-dom'],
+		plugins: [...getBaseRollupPlugins()]
 	}
 ]
