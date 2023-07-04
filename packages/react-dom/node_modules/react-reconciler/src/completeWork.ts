@@ -1,4 +1,4 @@
-import {NoFlags} from './fiberFlags'
+import {NoFlags, Update} from './fiberFlags'
 import {
 	appendInitialChild,
 	Container,
@@ -14,6 +14,10 @@ import {HostComponent, HostText, HostRoot, FunctionComponent} from './workTags'
  */
 import {FiberNode} from './fiber'
 
+const markUpdate = (fiber: FiberNode) => {
+	fiber.flags |= Update
+}
+
 export const completeWork = (wip: FiberNode) => {
 	const newProps = wip.pendingProps
 	const current = wip.alternate
@@ -21,8 +25,9 @@ export const completeWork = (wip: FiberNode) => {
 	switch (wip.tag) {
 		case HostComponent:
 			if (current !== null && wip.stateNode) {
-				// update
+				// update 阶段
 			} else {
+				// mount 阶段
 				// 1、构建DOM
 				// const instance = createInstance(wip.type, newProps)
 				const instance = createInstance(wip.type)
@@ -34,8 +39,16 @@ export const completeWork = (wip: FiberNode) => {
 			return null
 		case HostText:
 			if (current !== null && wip.stateNode) {
-				// update
+				// update 阶段
+				// 比较新旧text
+				const oldText = current.memoizedProps.content
+				const newText = newProps.content
+				//	如果不相等则标记 Update 的flags
+				if (oldText !== newText) {
+					markUpdate(wip)
+				}
 			} else {
+				// mount 阶段
 				// 1、构建DOM
 				// const instance = createTextInstance(wip.type, newProps)
 				const instance = createTextInstance(newProps.content)

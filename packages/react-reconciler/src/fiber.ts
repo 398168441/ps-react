@@ -23,6 +23,7 @@ export class FiberNode {
 	flags: Flags
 	subtreeFlags: Flags
 	updateQueue: unknown
+	deletions: FiberNode[] | null
 
 	constructor(tag: WorkTag, pendingProps: Props, key: Key) {
 		//	实例
@@ -51,6 +52,7 @@ export class FiberNode {
 		//	副作用
 		this.flags = NoFlags
 		this.subtreeFlags = NoFlags
+		this.deletions = null // 保存这个Fiber下所有需要删除的子Fiber
 	}
 }
 
@@ -90,6 +92,7 @@ export function createWorkInProgress(current: FiberNode, pendingProps: Props) {
 		//	update 阶段
 		wip.pendingProps = pendingProps
 		wip.flags = NoFlags //	清除之前的副作用
+		wip.deletions = null
 	}
 	//	复用current
 	wip.type = current.type
