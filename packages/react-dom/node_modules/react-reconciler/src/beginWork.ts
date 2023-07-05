@@ -4,10 +4,12 @@ import {UpdateQueue, processUpdateQueue} from './updateQueue'
 import {HostRoot, HostComponent, HostText, FunctionComponent} from './workTags'
 import {FiberNode} from './fiber'
 import {renderWithHooks} from './fiberHooks'
-//  递归中的递阶段
 
+/**
+ * 递归中的递阶段
+ * 比较jsx生成的ReactElement和之前的fiberNode，再返回子fiberNode
+ */
 export const beginWork = (wip: FiberNode) => {
-	//  比较ReactElement和fiberNode，返回子fiberNode
 	switch (wip.tag) {
 		case HostRoot:
 			return updateHostRoot(wip)
@@ -49,6 +51,7 @@ function updateHostRoot(wip: FiberNode) {
 	const pending = updateQueue.shared.pending
 	// 拿出来计算后把updateQueue置为null
 	updateQueue.shared.pending = null
+
 	//	1、这里返回的memoizedState其实就是<App/>这个element
 	const {memoizedState} = processUpdateQueue(baseState, pending)
 	wip.memoizedState = memoizedState
