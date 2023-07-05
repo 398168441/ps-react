@@ -2,6 +2,7 @@ import {
 	createUpdate,
 	createUpdateQueue,
 	enqueueUpdate,
+	processUpdateQueue,
 	UpdateQueue
 } from './updateQueue'
 import {Dispatcher, Dispatch} from 'react/src/currentDispatcher'
@@ -15,6 +16,9 @@ let currentlyRenderingFiber: FiberNode | null = null
 
 // 用来指向正在处理的hook
 let workInProgressHook: Hook | null = null
+
+//	用来指向当前hook
+let currentHook: Hook | null = null
 
 const {currentDispatcher} = internals
 
@@ -36,23 +40,32 @@ export function renderWithHooks(wip: FiberNode) {
 	const current = wip.alternate
 	if (current !== null) {
 		// update 阶段
+		//	共享数据层的hooks指向 render update阶段的hooks
+		currentDispatcher.current = HooksDispatcherOnUpdate
 	} else {
 		// mount 阶段
-		//	共享数据层的hooks指向 Reconciler mount阶段的hooks
+		//	共享数据层的hooks指向 render mount阶段的hooks
 		currentDispatcher.current = HooksDispatcherOnMount
 	}
 
 	const Component = wip.type
 	const props = wip.pendingProps
+	// 执行这个FunctionComponent 即这个函数组件的render
 	const children = Component(props)
 
 	// 重置
 	currentlyRenderingFiber = null
+	workInProgressHook = null
+	currentHook = null
 	return children
 }
 
 const HooksDispatcherOnMount: Dispatcher = {
 	useState: mountState
+}
+
+const HooksDispatcherOnUpdate: Dispatcher = {
+	useState: updateState
 }
 
 function mountState<State>(
@@ -88,6 +101,36 @@ function mountState<State>(
 }
 
 /**
+ * 比如进入<App/>对应的FunctionComponent Fiber
+ * function App() {
+ * 		const [num, updateNum] = useState(0)
+ * 		const [str, updateStr] = useState('a')
+ * 		const [bol, updateBol] = useState(false)
+ *  ...
+ * }
+ * <App/>中有三个hook
+ * App 组件update时，会执行三个 useState(xxx)
+ * 每次执行 updateState 方法都要找到当前的 useState
+ * 其中 updateWorkInProgresHook 就是去寻找当前的 useState
+ */
+function updateState<State>(): [State, Dispatch<State>] {
+	// 需要先找到当前useState对应的hook
+	const hook = updateWorkInProgresHook()
+
+	// 计算hook
+	const queue = hook.updateQueue as UpdateQueue<State>
+	const update = queue.shared.pending
+	const baseState = hook.memoizedState
+	if (update !== null) {
+		const {memoizedState} = processUpdateQueue(baseState, update)
+		// 消费update后 计算出最新的状态 重新赋值给hook.memoizedState
+		hook.memoizedState = memoizedState
+	}
+
+	return [hook.memoizedState, queue.dispatch as Dispatch<State>]
+}
+
+/**
  * 实现dispacth
  * dispatch方法需要接入更新流程
  * 1、创建update 【createUpdate】
@@ -107,6 +150,7 @@ function dispatchSetState<State>(
 
 // mount阶段获取当前hook
 function mountWorkInProgresHook() {
+	// mount时 是新建的hook
 	const hook: Hook = {
 		memoizedState: null,
 		updateQueue: null,
@@ -127,6 +171,60 @@ function mountWorkInProgresHook() {
 		workInProgressHook.next = hook
 		// 然后更新workInProgressHook的指向
 		workInProgressHook = hook
+	}
+
+	return workInProgressHook
+}
+
+// update阶段获取当前hook
+function updateWorkInProgresHook() {
+	// todo render阶段触发的更新
+	// update时 hook 从wip->alternate 即 current的memoized来
+	let nextCurrentHook: Hook | null = null
+
+	if (currentHook === null) {
+		// 表示这个FC update时的第一个hook
+		const current = currentlyRenderingFiber?.alternate
+		if (current !== null) {
+			nextCurrentHook = current?.memoizedState
+		} else {
+			// mount 阶段current才会是null 说明是边界错误
+			nextCurrentHook = null
+		}
+	} else {
+		nextCurrentHook = currentHook.next
+	}
+
+	// update 时多了一个 u4
+	if (nextCurrentHook === null) {
+		// mount/update u1 u2 u3
+		// update       u1 u2 u3 u4
+		throw new Error(
+			`组件${currentlyRenderingFiber?.type}本次执行时的Hook比上次执行时多`
+		)
+	}
+
+	currentHook = nextCurrentHook
+	const newHook: Hook = {
+		memoizedState: nextCurrentHook?.memoizedState,
+		updateQueue: nextCurrentHook?.updateQueue,
+		next: null
+	}
+
+	if (workInProgressHook === null) {
+		// mount时 第一个hook
+		if (currentlyRenderingFiber === null) {
+			throw new Error('请在函数组件内调用hook')
+		} else {
+			workInProgressHook = newHook
+			// FunctionComponent的memoizedState保存hooks的链表
+			currentlyRenderingFiber.memoizedState = workInProgressHook
+		}
+	} else {
+		// mount时 后续的hook
+		workInProgressHook.next = newHook
+		// 然后更新workInProgressHook的指向
+		workInProgressHook = newHook
 	}
 
 	return workInProgressHook

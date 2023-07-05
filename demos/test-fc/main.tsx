@@ -2,9 +2,10 @@ import React, {useState} from 'react'
 import ReactDOM from 'react-dom/client'
 
 const App = () => {
-	const [num] = useState(100)
-
-	return <div>{num}</div>
+	const [num, updateNum] = useState(100)
+	// @ts-ignore
+	window.updateNum = updateNum
+	return num === 3 ? <Child /> : <div>{num}</div>
 }
 
 const Child = () => {

@@ -52,7 +52,11 @@ export class FiberNode {
 		//	副作用
 		this.flags = NoFlags
 		this.subtreeFlags = NoFlags
-		this.deletions = null // 保存这个Fiber下所有需要删除的子Fiber
+		/**
+		 * 保存这个Fiber下所有需要删除的子Fiber 因为在删除一颗Fiber树时，
+		 * 需要处理所有子树的unmount、解绑ref、找到根HostComponet(只有HostComponet才是真正的DOM)
+		 */
+		this.deletions = null
 	}
 }
 
