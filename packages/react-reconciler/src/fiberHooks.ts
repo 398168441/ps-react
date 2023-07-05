@@ -1,3 +1,7 @@
+/**
+ * 【重要】
+ * 处理hook
+ */
 import {
 	createUpdate,
 	createUpdateQueue,

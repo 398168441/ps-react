@@ -5,7 +5,7 @@ const App = () => {
 	const [num, updateNum] = useState(100)
 	// @ts-ignore
 	window.updateNum = updateNum
-	return <div onClick={() => updateNum(3)}>{num}</div>
+	return num === 3 ? <p>333</p> : <div>555</div>
 }
 
 const Child = () => {
