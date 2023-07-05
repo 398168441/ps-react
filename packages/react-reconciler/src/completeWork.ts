@@ -13,6 +13,7 @@ import {HostComponent, HostText, HostRoot, FunctionComponent} from './workTags'
  * 2、标记Update Flag
  */
 import {FiberNode} from './fiber'
+import {updateFiberProps} from 'react-dom/src/SyntheticEvent'
 
 const markUpdate = (fiber: FiberNode) => {
 	fiber.flags |= Update
@@ -26,11 +27,17 @@ export const completeWork = (wip: FiberNode) => {
 		case HostComponent:
 			if (current !== null && wip.stateNode) {
 				// update 阶段
+				/**
+				 * 1、判断props的变化 比如 {onClick: xx} -> {onClick: xxx} 、{className: 'a'}-> {className: 'ab'}
+				 * 2、有变化 就标记一个 Update Flags
+				 * 3、标记了Update Flags就可以在commit阶段的commitUpdate函数里处理HostComponent对应的dom的属性修改
+				 */
+				// 暂时直接全部修改
+				updateFiberProps(wip.stateNode, newProps)
 			} else {
 				// mount 阶段
 				// 1、构建DOM
-				// const instance = createInstance(wip.type, newProps)
-				const instance = createInstance(wip.type)
+				const instance = createInstance(wip.type, newProps)
 				// 2、将DOM插入DOM树中
 				appendAllChildren(instance, wip)
 				wip.stateNode = instance
@@ -41,7 +48,7 @@ export const completeWork = (wip: FiberNode) => {
 			if (current !== null && wip.stateNode) {
 				// update 阶段
 				// 比较新旧text
-				const oldText = current.memoizedProps.content
+				const oldText = current.memoizedProps?.content
 				const newText = newProps.content
 				//	如果不相等则标记 Update 的flags
 				if (oldText !== newText) {
