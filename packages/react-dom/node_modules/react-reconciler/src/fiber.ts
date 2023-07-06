@@ -2,7 +2,7 @@ import {ReactElementType} from 'shared/ReactTypes'
 import {Props, Key, Ref} from 'shared/ReactTypes'
 import {Container} from 'hostConfig'
 
-import {FunctionComponent, WorkTag, HostComponent} from './workTags'
+import {FunctionComponent, WorkTag, HostComponent, Fragment} from './workTags'
 import {Flags, NoFlags} from './fiberFlags'
 
 export class FiberNode {
@@ -28,10 +28,14 @@ export class FiberNode {
 	constructor(tag: WorkTag, pendingProps: Props, key: Key) {
 		//	实例
 		this.tag = tag
-		this.key = key
+		this.key = key || null
 		//	比如一个HostComponent <div> stageNode保存的就是这个div对应的Dom
 		this.stateNode = null
-		// 对于 <App /> FunctionComponent Fiber 他的type就是 <App />
+		/**
+		 * 对于 <App /> FunctionComponent Fiber 他的type就是 <App />
+		 * 对于 HostComponent <div> Fiber 他的type就是字符串 'div'
+		 * 对于 Fragment type就是 Fragment
+		 */
 		this.type = null
 
 		//	节点之间的关系 构成树状结构
@@ -120,5 +124,9 @@ export function createFiberFromElement(element: ReactElementType) {
 	}
 	const fiber = new FiberNode(fiberTag, props, key)
 	fiber.type = type
+	return fiber
+}
+export function createFiberFromFragment(elements: any[], key: Key): FiberNode {
+	const fiber = new FiberNode(Fragment, elements, key)
 	return fiber
 }

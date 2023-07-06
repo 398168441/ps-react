@@ -81,6 +81,31 @@ function commitMutaitonEffectsOnFiber(finishedWork: FiberNode) {
 	}
 }
 
+// 记录要删除的同级的所有节点
+function recordHostChildrenToDelete(
+	childrenToDelete: FiberNode[],
+	unmountFiber: FiberNode
+) {
+	/**
+	 * 1、找到第一个root Host
+	 * 2、没找到一个host节点 就要判断是不是第1步找到的节点的兄弟节点
+	 * */
+	const lastOne = childrenToDelete[childrenToDelete.length - 1]
+	if (!lastOne) {
+		//不存在说明此次是找到的第一个节点
+		childrenToDelete.push(unmountFiber)
+	} else {
+		// 如果存在 说明此次不是第一个 就要判断这个unmountFiber是不是兄弟节点
+		let node = lastOne.sibling
+		while (node !== null) {
+			if (unmountFiber === node) {
+				childrenToDelete.push(unmountFiber)
+			}
+			node = node.sibling
+		}
+	}
+}
+
 function commitChildDeletion(childToDeletion: FiberNode) {
 	/**
 	 * 对于标记ChildDeletion的子树，由于子树中：
@@ -89,21 +114,18 @@ function commitChildDeletion(childToDeletion: FiberNode) {
 	 * 3、对于子树的根HostComponent，才是需要移除的DOM
 	 * 注意：所以需要实现「遍历ChildDeletion子树」的流程
 	 * */
-	let rootHostNode: FiberNode | null = null // 定义这颗子树的根节点
+	// 定义这颗子树的根节点 即需要删除的子树的根节点 但是现在可能存在1个或者是Fragment包裹起来的多个
+	const rootChildrenToDelete: FiberNode[] | null = []
 
 	// 1、递归子树
 	commitNestedComponent(childToDeletion, (unmountFiber) => {
 		switch (unmountFiber.tag) {
 			case HostComponent:
-				if (rootHostNode === null) {
-					rootHostNode = unmountFiber
-				}
+				recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber)
 				// 解绑ref
 				return
 			case HostText:
-				if (rootHostNode === null) {
-					rootHostNode = unmountFiber
-				}
+				recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber)
 				return
 			case FunctionComponent:
 				// 处理 useEffect unmount
@@ -115,11 +137,13 @@ function commitChildDeletion(childToDeletion: FiberNode) {
 		}
 	})
 
-	// 2、移除rootHostNode
-	if (rootHostNode !== null) {
+	// 2、rootChildrenToDelete中有数据 则遍历移除
+	if (rootChildrenToDelete.length) {
 		const hostParent = getHostParent(childToDeletion)
 		if (hostParent !== null) {
-			removeChild((rootHostNode as FiberNode).stateNode, hostParent)
+			rootChildrenToDelete.forEach((node) => {
+				removeChild(node.stateNode, hostParent)
+			})
 		}
 	}
 	childToDeletion.return = null

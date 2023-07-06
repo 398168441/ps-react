@@ -15,6 +15,12 @@ const App = () => {
 				updateNum(num + 1)
 			}}
 		>
+			<>
+				<li>1</li>
+				<li>2</li>
+			</>
+			<li>3</li>
+			<li>4</li>
 			{arr}
 		</ul>
 	)

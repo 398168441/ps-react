@@ -5,7 +5,13 @@ import {
 	createInstance,
 	createTextInstance
 } from 'hostConfig'
-import {HostComponent, HostText, HostRoot, FunctionComponent} from './workTags'
+import {
+	HostComponent,
+	HostText,
+	HostRoot,
+	FunctionComponent,
+	Fragment
+} from './workTags'
 /**
  * 递归中的归阶段
  * 需要解决的问题：
@@ -65,9 +71,8 @@ export const completeWork = (wip: FiberNode) => {
 			bubbleProperties(wip)
 			return null
 		case HostRoot:
-			bubbleProperties(wip)
-			return null
 		case FunctionComponent:
+		case Fragment:
 			bubbleProperties(wip)
 			return null
 		default:
