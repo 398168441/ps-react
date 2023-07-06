@@ -1,8 +1,10 @@
 import {Dispatch} from 'react/src/currentDispatcher'
 import {Action} from 'shared/ReactTypes'
+import {Lane} from './fiberLanes'
 
 export interface Update<State> {
 	action: Action<State>
+	lane: Lane // 代表这个更新的优先级
 	next: Update<any> | null
 }
 
@@ -14,9 +16,13 @@ export interface UpdateQueue<State> {
 }
 
 //  创建Update
-export const createUpdate = <State>(action: Action<State>): Update<State> => {
+export const createUpdate = <State>(
+	action: Action<State>,
+	lane: Lane
+): Update<State> => {
 	return {
 		action,
+		lane,
 		next: null
 	}
 }
@@ -40,10 +46,10 @@ export const enqueueUpdate = <State>(
 	updateQueue: UpdateQueue<State>,
 	update: Update<State>
 ) => {
-	//	每次添加进来的update 会和上一次插入的Update 通过next 形成一条环装链表 a->b->c->a
+	//	每次添加进来的update 会和上一次插入的Update 通过next 形成一条环状链表 a->b->c->a
 	const pending = updateQueue.shared.pending
 	if (pending === null) {
-		//	插入第一个update 则目前只有一个update 自己和自己形成环装链表 a->a->a
+		//	插入第一个update 则目前只有一个update 自己和自己形成环状链表 a->a->a
 		update.next = update
 	} else {
 		// pending是最后一个update 它的next就是第一个

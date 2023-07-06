@@ -14,6 +14,7 @@ import internals from 'shared/internals'
 import {FiberNode} from './fiber'
 import {Action} from 'shared/ReactTypes'
 import {scheduleUpdateOnFiber} from './workLoop'
+import {requestUpdateLane} from './fiberLanes'
 
 // 当前正在render的fiber
 let currentlyRenderingFiber: FiberNode | null = null
@@ -141,13 +142,15 @@ function updateState<State>(): [State, Dispatch<State>] {
  * 2、把update加入updateQueue【enqueueUpdate】
  * 3、调度Fiber 【scheduleUpdateOnFiber】
  * */
+// 这个方法的触发条件 1、onClick事件的回调 2、useEffect副作用
 function dispatchSetState<State>(
 	fiber: FiberNode,
 	updateQueue: UpdateQueue<State>,
 	action: Action<State>
 ) {
-	// 创建update
-	const update = createUpdate<State>(action)
+	// 创建update 先获取这个更新的优先级
+	const lane = requestUpdateLane()
+	const update = createUpdate<State>(action, lane)
 	enqueueUpdate(updateQueue, update)
 	scheduleUpdateOnFiber(fiber)
 }
