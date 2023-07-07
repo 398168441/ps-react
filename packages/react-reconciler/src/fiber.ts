@@ -78,7 +78,7 @@ export class FiberRootNode {
 	container: Container
 	current: FiberNode
 	finishedWork: FiberNode | null //	指向更新完成以后的【hostRootFiber】
-	pendingLanes: Lanes //  代表所有未被消费的Lane
+	pendingLanes: Lanes //  代表所有未被消费的Lanes
 	finishedLane: Lane //	代表本次消费的Lane
 	constructor(container: Container, hostRootFiber: FiberNode) {
 		this.container = container

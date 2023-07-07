@@ -374,6 +374,10 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 
 		//  REACT_ELEMENT_TYPE
 		if (typeof newChild === 'object' && newChild !== null) {
+			// 2、多节点 (更新后newChild是多节点)
+			if (Array.isArray(newChild)) {
+				return reconcileChildrenArray(returnFiber, currentFiber, newChild)
+			}
 			// 1、单节点 (更新后newChild是单节点)
 			switch (newChild.$$typeof) {
 				case REACT_ELEMENT_TYPE:
@@ -385,11 +389,6 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 						console.warn('未实现的reconcile类型', newChild)
 					}
 					break
-			}
-
-			// 2、多节点 (更新后newChild是多节点)
-			if (Array.isArray(newChild)) {
-				return reconcileChildrenArray(returnFiber, currentFiber, newChild)
 			}
 		}
 

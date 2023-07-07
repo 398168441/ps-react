@@ -1,3 +1,4 @@
+import {Lane, NoLane} from './fiberLanes'
 /**
  * 【重要】
  * 处理hook
@@ -25,6 +26,8 @@ let workInProgressHook: Hook | null = null
 //	用来指向当前hook
 let currentHook: Hook | null = null
 
+let renderLane = NoLane
+
 const {currentDispatcher} = internals
 
 // 满足所有hook的类型 useState useCallback useEffect...
@@ -37,10 +40,11 @@ export interface Hook {
 	next: Hook | null
 }
 
-export function renderWithHooks(wip: FiberNode) {
+export function renderWithHooks(wip: FiberNode, lane: Lane) {
 	// 赋值
 	currentlyRenderingFiber = wip
 	wip.memoizedState = null
+	renderLane = lane
 
 	const current = wip.alternate
 	if (current !== null) {
@@ -62,6 +66,7 @@ export function renderWithHooks(wip: FiberNode) {
 	currentlyRenderingFiber = null
 	workInProgressHook = null
 	currentHook = null
+	renderLane = NoLane
 	return children
 }
 
@@ -127,7 +132,7 @@ function updateState<State>(): [State, Dispatch<State>] {
 	const update = queue.shared.pending
 	const baseState = hook.memoizedState
 	if (update !== null) {
-		const {memoizedState} = processUpdateQueue(baseState, update)
+		const {memoizedState} = processUpdateQueue(baseState, update, renderLane)
 		// 消费update后 计算出最新的状态 重新赋值给hook.memoizedState
 		hook.memoizedState = memoizedState
 	}
@@ -152,7 +157,7 @@ function dispatchSetState<State>(
 	const lane = requestUpdateLane()
 	const update = createUpdate<State>(action, lane)
 	enqueueUpdate(updateQueue, update)
-	scheduleUpdateOnFiber(fiber)
+	scheduleUpdateOnFiber(fiber, lane)
 }
 
 // mount阶段获取当前hook

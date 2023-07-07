@@ -13,6 +13,8 @@ const App = () => {
 		<ul
 			onClick={() => {
 				updateNum(num + 1)
+				updateNum(num + 1)
+				updateNum(num + 1)
 			}}
 		>
 			<>

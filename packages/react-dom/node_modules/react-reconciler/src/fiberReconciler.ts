@@ -40,6 +40,6 @@ export function updateContainer(
 		update
 	)
 	// 调度 workLoop中
-	scheduleUpdateOnFiber(hostRootFiber)
+	scheduleUpdateOnFiber(hostRootFiber, lane)
 	return element
 }
