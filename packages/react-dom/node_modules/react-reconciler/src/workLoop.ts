@@ -33,6 +33,7 @@ function prepareFreshStack(root: FiberRootNode, renderLane: Lane) {
  * 每次更新都会触发 次方法
  */
 export function scheduleUpdateOnFiber(fiber: FiberNode, lane: Lane) {
+	// 调度开始先找到FiberRootNode 每次更新都从整个应用的根节点开始
 	const root = markUpdateFromFiberToRoot(fiber)
 	//	把本次更新的lane记录在FiberRootNode的pendingLanes中
 	markRootUpdated(root, lane)
@@ -54,7 +55,7 @@ function ensureRootIsScheduled(root: FiberRootNode) {
 			console.warn('在微任务中调度，优先级', updateLane)
 		}
 		/**
-		 * scheduleSyncCallback会把rendeer阶段的开始函数存在syncQueue里 没触发一次更新就会往里push一个
+		 * scheduleSyncCallback会把rendeer阶段的开始函数存在syncQueue里 每触发一次更新就会往里push一个
 		 * 像这样 [performSyncWorkOnRoot, performSyncWorkOnRoot, performSyncWorkOnRoot]
 		 */
 		scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root, updateLane))
@@ -95,6 +96,7 @@ function markUpdateFromFiberToRoot(fiber: FiberNode) {
 // 调度方法 render阶段 同步更新的入口
 function performSyncWorkOnRoot(root: FiberRootNode, lane: Lane) {
 	// 因为多次更新 添加到syncQueue中多次 冲洗时遍历syncQueue会多次执行
+	//	所以先获取下最高优先级 先做个判断
 	const nextLane = getHighestPriorityLane(root.pendingLanes)
 	if (nextLane !== SyncLane) {
 		//1、比SyncLane更低的优先级
@@ -120,7 +122,8 @@ function performSyncWorkOnRoot(root: FiberRootNode, lane: Lane) {
 	} while (true)
 
 	/**
-	 * render阶段完成以后，会得到一颗操作后的workInProgress Fiber树
+	 * 3、render阶段完成
+	 * 完成以后会得到一颗操作后的workInProgress Fiber树
 	 * 并把这颗Fiber树挂载FiberRootNode的finishedWork上
 	 * 并把本次更新的Lane赋值到FiberRootNode上
 	 */

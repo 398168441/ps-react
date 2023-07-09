@@ -131,6 +131,9 @@ function updateState<State>(): [State, Dispatch<State>] {
 	const queue = hook.updateQueue as UpdateQueue<State>
 	const update = queue.shared.pending
 	const baseState = hook.memoizedState
+	// update从queue.shared.pending中拿出来消费掉后要 重置
+	queue.shared.pending = null
+
 	if (update !== null) {
 		const {memoizedState} = processUpdateQueue(baseState, update, renderLane)
 		// 消费update后 计算出最新的状态 重新赋值给hook.memoizedState
@@ -175,7 +178,12 @@ function mountWorkInProgresHook() {
 			throw new Error('请在函数组件内调用hook')
 		} else {
 			workInProgressHook = hook
-			// FunctionComponent的memoizedState保存hooks的链表
+			//
+			/**
+			 * FunctionComponent的memoizedState保存hooks的链表
+			 * 把第一个hook挂载在memoizedState上
+			 * 后续的hook通过next指针依次挂载 形成一条单向链表
+			 */
 			currentlyRenderingFiber.memoizedState = workInProgressHook
 		}
 	} else {

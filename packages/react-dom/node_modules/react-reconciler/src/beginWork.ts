@@ -59,6 +59,7 @@ function updateFunctionComponent(wip: FiberNode, renderLane: Lane) {
  * HostRoot的beginWork流程
  * 1、计算状态的最新值
  * 2、创造子FiberNode
+ * ??? 为什么HostRoot会存在updateQueue
  */
 function updateHostRoot(wip: FiberNode, renderLane: Lane) {
 	const baseState = wip.memoizedState

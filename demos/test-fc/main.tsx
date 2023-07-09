@@ -12,9 +12,9 @@ const App = () => {
 	return (
 		<ul
 			onClick={() => {
-				updateNum(num + 1)
-				updateNum(num + 1)
-				updateNum(num + 1)
+				updateNum((num) => num + 1)
+				updateNum((num) => num + 1)
+				updateNum((num) => num + 1)
 			}}
 		>
 			<>
@@ -23,7 +23,7 @@ const App = () => {
 			</>
 			<li>3</li>
 			<li>4</li>
-			{arr}
+			{num}
 		</ul>
 	)
 }
