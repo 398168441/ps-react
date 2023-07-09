@@ -5,6 +5,7 @@ import {Container} from 'hostConfig'
 import {FunctionComponent, WorkTag, HostComponent, Fragment} from './workTags'
 import {Flags, NoFlags} from './fiberFlags'
 import {Lane, Lanes, NoLane, NoLanes} from './fiberLanes'
+import {Effect} from './fiberHooks'
 
 export class FiberNode {
 	type: any
@@ -51,7 +52,7 @@ export class FiberNode {
 		this.pendingProps = pendingProps //	工作开始时的props
 		this.memoizedProps = null //	工作完成后的props
 		this.memoizedState = null // 对于FunctionComponent的memoizedState 指向hoosk链表(以链表的数据结构保存hooks)
-		this.updateQueue = null
+		this.updateQueue = null // 对于FunctionComponent的updateQueue 用来保存useEffect副作用的环状链表
 
 		this.alternate = null //	current <-> workInProgress
 		//	副作用
@@ -63,6 +64,11 @@ export class FiberNode {
 		 */
 		this.deletions = null
 	}
+}
+
+export interface pendingPassiveEffects {
+	unmount: Effect[] // 卸载时的副作用回调函数
+	update: Effect[] // 更新时的副作用回调函数
 }
 
 /**
@@ -80,6 +86,7 @@ export class FiberRootNode {
 	finishedWork: FiberNode | null //	指向更新完成以后的【hostRootFiber】
 	pendingLanes: Lanes //  代表所有未被消费的Lanes
 	finishedLane: Lane //	代表本次消费的Lane
+	pendingPassiveEffects: pendingPassiveEffects //	在FiberRootNode来收集副作用的回调函数
 	constructor(container: Container, hostRootFiber: FiberNode) {
 		this.container = container
 		this.current = hostRootFiber
@@ -87,6 +94,10 @@ export class FiberRootNode {
 		this.finishedWork = null
 		this.pendingLanes = NoLanes
 		this.finishedLane = NoLane
+		this.pendingPassiveEffects = {
+			unmount: [],
+			update: []
+		}
 	}
 }
 

@@ -14,6 +14,7 @@ importers:
       '@rollup/plugin-replace': ^5.0.2
       '@types/react': ^18.0.37
       '@types/react-dom': ^18.0.11
+      '@types/scheduler': ^0.16.3
       '@typescript-eslint/eslint-plugin': ^5.60.0
       '@typescript-eslint/parser': ^5.60.0
       '@vitejs/plugin-react': ^4.0.0
@@ -32,10 +33,12 @@ importers:
       rollup: ^3.25.2
       rollup-plugin-generate-package-json: ^3.2.0
       rollup-plugin-typescript2: ^0.35.0
+      scheduler: ^0.23.0
       typescript: ^5.1.3
       vite: ^4.3.9
     dependencies:
       '@rollup/plugin-replace': 5.0.2_rollup@3.26.0
+      scheduler: 0.23.0
     devDependencies:
       '@babel/core': 7.22.5
       '@babel/plugin-transform-react-jsx': 7.22.5_@babel+core@7.22.5
@@ -46,6 +49,7 @@ importers:
       '@rollup/plugin-commonjs': 25.0.2_rollup@3.26.0
       '@types/react': 18.2.14
       '@types/react-dom': 18.2.6
+      '@types/scheduler': 0.16.3
       '@typescript-eslint/eslint-plugin': 5.61.0_24v3duij7ab7rtbfz4qzw7dc5u
       '@typescript-eslint/parser': 5.61.0_iqf7tbmerllfqanu4l3d6aqdn4
       '@vitejs/plugin-react': 4.0.1_vite@4.3.9
@@ -4393,7 +4397,6 @@ packages:
 
   /js-tokens/4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
-    dev: true
 
   /js-yaml/3.14.1:
     resolution: {integrity: sha512-okMH7OXXJ7YrN9Ok3/SXrnu4iX9yOk+25nqX4imS2npuvTYDmo/QEZoqwZkYaIDk3jVvBOTOIEgEhaLOynBS9g==}
@@ -4585,6 +4588,13 @@ packages:
   /lodash/4.17.21:
     resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
     dev: true
+
+  /loose-envify/1.4.0:
+    resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
+    hasBin: true
+    dependencies:
+      js-tokens: 4.0.0
+    dev: false
 
   /lru-cache/10.0.0:
     resolution: {integrity: sha512-svTf/fzsKHffP42sujkO/Rjs37BCIsQVRCeNYIm9WN8rgT7ffoUnRtZCqU+6BqcSBdv8gwJeTz8knJpgACeQMw==}
@@ -5223,6 +5233,12 @@ packages:
     dependencies:
       xmlchars: 2.2.0
     dev: true
+
+  /scheduler/0.23.0:
+    resolution: {integrity: sha512-CtuThmgHNg7zIZWAXi3AsyIzA3n4xx7aNyjwC2VJldO2LMVDhFK+63xGqq6CsJH4rTAt6/M+N4GhZiDYPx9eUw==}
+    dependencies:
+      loose-envify: 1.4.0
+    dev: false
 
   /semver/5.7.1:
     resolution: {integrity: sha512-sauaDf/PZdVgrLTNYHRtpXa1iRiKcaebiKQ1BJdpQlWH2lCvexQdX55snPFyK7QzpudqbCI0qXFfOasHdyNDGQ==}

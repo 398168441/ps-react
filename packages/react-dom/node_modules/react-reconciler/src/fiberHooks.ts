@@ -58,9 +58,13 @@ type EffectCallback = () => void
 type EffectDeps = any[] | null
 
 export function renderWithHooks(wip: FiberNode, lane: Lane) {
-	// 赋值
+	//  赋值
 	currentlyRenderingFiber = wip
+	//	重置hooks链表
 	wip.memoizedState = null
+	// 重置effect链表
+	wip.updateQueue = null
+
 	renderLane = lane
 
 	const current = wip.alternate
@@ -101,9 +105,9 @@ function mountEffect(create: EffectCallback | void, deps: EffectDeps | void) {
 	const hook = mountWorkInProgresHook()
 	const nextDeps = deps === undefined ? null : deps
 	//	mount 时需要执行create 当前Fiber需要标记 PassiveEffect
-	;(currentlyRenderingFiber as FiberNode).tag |= PassiveEffect
+	;(currentlyRenderingFiber as FiberNode).flags |= PassiveEffect
 
-	//	把次hook保存在hook.memoizedState中
+	//	把本次effect保存在hook.memoizedState中
 	hook.memoizedState = pushEffect(
 		Passive | HookHasEffect,
 		create,
@@ -113,9 +117,61 @@ function mountEffect(create: EffectCallback | void, deps: EffectDeps | void) {
 }
 
 function updateEffect(create: EffectCallback | void, deps: EffectDeps | void) {
-	//
+	const hook = updateWorkInProgresHook()
+	const nextDeps = deps === undefined ? null : deps
+
+	let destroy: EffectCallback | void
+
+	if (currentHook !== null) {
+		const prevEffect = hook.memoizedState as Effect
+		destroy = prevEffect.destroy
+		if (nextDeps !== null) {
+			/**
+			 * 浅比较依赖 相等
+			 * 1、pushEffect是 Passive
+			 * 2、不触发create
+			 */
+			const prevDeps = prevEffect.deps
+			if (areHookInputsEqual(nextDeps, prevDeps)) {
+				hook.memoizedState = pushEffect(Passive, create, destroy, nextDeps)
+				return
+			}
+		}
+		/**
+		 * 浅比较 不相等
+		 * 1、pushEffect是 Passive|HookHasEffect 需要触发create
+		 * 2、并给Fiber标记Passive和HookHasEffect
+		 */
+		;(currentlyRenderingFiber as FiberNode).flags |= PassiveEffect
+		hook.memoizedState = pushEffect(
+			Passive | HookHasEffect,
+			create,
+			destroy,
+			nextDeps
+		)
+	}
 }
 
+function areHookInputsEqual(nextDeps: EffectDeps, prevDeps: EffectDeps) {
+	if (nextDeps === null || prevDeps === null) {
+		return false
+	}
+	for (let i = 0; i < nextDeps.length && i < prevDeps.length; i++) {
+		//	如果相等则继续遍历
+		if (Object.is(nextDeps[i], prevDeps[i])) {
+			continue
+		}
+		return false
+	}
+	//	遍历完全部相等 则返回true
+	return true
+}
+
+/**
+ * (这里的effect暂时只有useEffect)
+ * 把这个Fiber的所有effect以环状链表的形式挂载在Fiber的updateQueue上
+ * 并把当前Hook生成的effect返回保存在useEffect这个hook的memoizedState上
+ */
 function pushEffect(
 	hookFlags: Flags,
 	create: EffectCallback | void,
