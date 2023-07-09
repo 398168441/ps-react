@@ -16,6 +16,8 @@ import {FiberNode} from './fiber'
 import {Action} from 'shared/ReactTypes'
 import {scheduleUpdateOnFiber} from './workLoop'
 import {requestUpdateLane} from './fiberLanes'
+import {Flags, PassiveEffect} from './fiberFlags'
+import {HookHasEffect, Passive} from './hookEffectTags'
 
 // 当前正在render的fiber
 let currentlyRenderingFiber: FiberNode | null = null
@@ -39,6 +41,21 @@ export interface Hook {
 	// 指向下一个hook
 	next: Hook | null
 }
+
+export interface Effect {
+	tag: Flags
+	create: EffectCallback | void
+	destroy: EffectCallback | void
+	deps: EffectDeps
+	next: Effect | null //指向下一个Fiber的hook.memoizedState中
+}
+
+export interface FCUpdateQueue<State> extends UpdateQueue<State> {
+	lastEffect: Effect | null // 指向useEffect环状链表的最后一个
+}
+
+type EffectCallback = () => void
+type EffectDeps = any[] | null
 
 export function renderWithHooks(wip: FiberNode, lane: Lane) {
 	// 赋值
@@ -71,11 +88,78 @@ export function renderWithHooks(wip: FiberNode, lane: Lane) {
 }
 
 const HooksDispatcherOnMount: Dispatcher = {
-	useState: mountState
+	useState: mountState,
+	useEffect: mountEffect
 }
 
 const HooksDispatcherOnUpdate: Dispatcher = {
-	useState: updateState
+	useState: updateState,
+	useEffect: updateEffect
+}
+
+function mountEffect(create: EffectCallback | void, deps: EffectDeps | void) {
+	const hook = mountWorkInProgresHook()
+	const nextDeps = deps === undefined ? null : deps
+	//	mount 时需要执行create 当前Fiber需要标记 PassiveEffect
+	;(currentlyRenderingFiber as FiberNode).tag |= PassiveEffect
+
+	//	把次hook保存在hook.memoizedState中
+	hook.memoizedState = pushEffect(
+		Passive | HookHasEffect,
+		create,
+		undefined,
+		nextDeps
+	)
+}
+
+function updateEffect(create: EffectCallback | void, deps: EffectDeps | void) {
+	//
+}
+
+function pushEffect(
+	hookFlags: Flags,
+	create: EffectCallback | void,
+	destroy: EffectCallback | void,
+	deps: EffectDeps
+) {
+	// 先定义一个Effect
+	const effect: Effect = {
+		tag: hookFlags,
+		create,
+		destroy,
+		deps,
+		next: null
+	}
+	const fiber = currentlyRenderingFiber as FiberNode
+	//	把useEffect的环状链表保存在Fiber的updateQueue上
+	const updateQueue = fiber.updateQueue as FCUpdateQueue<any>
+	if (updateQueue === null) {
+		const updateQueue = createFCUpdateQueue()
+		fiber.updateQueue = updateQueue
+		//	effect和自己形成环状链表
+		effect.next = effect
+		updateQueue.lastEffect = effect
+	} else {
+		//	插入 Effect
+		const lastEffect = updateQueue.lastEffect
+		if (lastEffect === null) {
+			effect.next = effect
+			updateQueue.lastEffect = effect
+		} else {
+			//	把新创建的 effect 插入在末尾 并和第一个effct连接形成新的环状链表
+			const firstEffect = lastEffect.next
+			lastEffect.next = effect
+			effect.next = firstEffect
+			updateQueue.lastEffect = effect
+		}
+	}
+	return effect
+}
+
+function createFCUpdateQueue<State>() {
+	const updateQueue = createUpdateQueue<State>() as FCUpdateQueue<State>
+	updateQueue.lastEffect = null
+	return updateQueue
 }
 
 function mountState<State>(
