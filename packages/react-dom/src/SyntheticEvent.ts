@@ -3,7 +3,12 @@
  * 合成事件
  * 这个文件存放所有和react-dom相关的事件系统
  */
-
+import {
+	unstable_ImmediatePriority,
+	unstable_NormalPriority,
+	unstable_runWithPriority,
+	unstable_UserBlockingPriority
+} from 'scheduler'
 import {Container} from 'hostConfig'
 import {Props} from 'shared/ReactTypes'
 
@@ -104,7 +109,10 @@ function triggerEventFlow(
 ) {
 	for (let i = 0; i < eventCallbackArr.length; i++) {
 		const callback = eventCallbackArr[i]
-		callback.call(null, se)
+		//	第一个参数会赋值给 变量currentPriorityLevel 代表当前上下文的优先级
+		unstable_runWithPriority(eventTypeToSchdulerPriority(se.type), () => {
+			callback.call(null, se)
+		})
 		//  如果 合成事件对象的 __stopPropagation === true 则停止循环
 		if (se.__stopPropagation) {
 			break
@@ -175,4 +183,17 @@ function collectPaths(
 	}
 
 	return paths
+}
+
+function eventTypeToSchdulerPriority(eventType: string) {
+	switch (eventType) {
+		case 'click':
+		case 'keydown':
+		case 'keyup':
+			return unstable_ImmediatePriority
+		case 'scroll':
+			return unstable_UserBlockingPriority
+		default:
+			return unstable_NormalPriority
+	}
 }
