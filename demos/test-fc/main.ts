@@ -47,7 +47,7 @@ let curCallback: CallbackNode | null = null
 		][priority]
 		btn.onclick = () => {
 			workList.unshift({
-				count: 100,
+				count: 20,
 				priority: priority as Priority
 			})
 			schedule()
@@ -60,7 +60,6 @@ function schedule() {
 	const cbNode = getFirstCallbackNode()
 	//	一、找出优先级最高的work，数字越小优先级越高 1-5
 	const curWork = workList.sort((w1, w2) => w1.priority - w2.priority)[0]
-	const {priority} = curWork
 
 	//	二、 策略逻辑
 	if (!curWork) {
@@ -68,7 +67,10 @@ function schedule() {
 		cbNode && cancelCallback(cbNode)
 		return
 	}
-	if (priority === prevPriority) {
+
+	const {priority: curPriority} = curWork
+
+	if (curPriority === prevPriority) {
 		// 相同优先级 直接不执行新的调度
 		return
 	}
@@ -76,7 +78,7 @@ function schedule() {
 	cbNode && cancelCallback(cbNode)
 
 	//	三、调度宏任务
-	curCallback = scheduleCallback(priority, perform.bind(null, curWork))
+	curCallback = scheduleCallback(curPriority, perform.bind(null, curWork))
 }
 
 //  3、微任务调度结束，进入render阶段
@@ -121,7 +123,7 @@ function insertSpan(content) {
 	const span = document.createElement('span')
 	span.innerText = content
 	span.className = `pri-${content}`
-	doSomeBuzyWork(10000000)
+	doSomeBuzyWork(100000000)
 	root?.appendChild(span)
 }
 
