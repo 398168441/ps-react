@@ -6,6 +6,7 @@ import {FunctionComponent, WorkTag, HostComponent, Fragment} from './workTags'
 import {Flags, NoFlags} from './fiberFlags'
 import {Lane, Lanes, NoLane, NoLanes} from './fiberLanes'
 import {Effect} from './fiberHooks'
+import {CallbackNode} from 'scheduler'
 
 export class FiberNode {
 	type: any
@@ -87,6 +88,8 @@ export class FiberRootNode {
 	pendingLanes: Lanes //  代表所有未被消费的Lanes
 	finishedLane: Lane //	代表本次消费的Lane
 	pendingPassiveEffects: pendingPassiveEffects //	在FiberRootNode来收集副作用的回调函数
+	callbackNode: CallbackNode | null //	保存当前调度的回调函数
+	callbackPriority: Lane //	保存当前调度回调函数的优先级
 	constructor(container: Container, hostRootFiber: FiberNode) {
 		this.container = container
 		this.current = hostRootFiber
@@ -94,6 +97,8 @@ export class FiberRootNode {
 		this.finishedWork = null
 		this.pendingLanes = NoLanes
 		this.finishedLane = NoLane
+		this.callbackNode = null
+		this.callbackPriority = NoLane
 		this.pendingPassiveEffects = {
 			unmount: [],
 			update: []
