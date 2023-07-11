@@ -12,6 +12,7 @@ import {FiberNode, FiberRootNode} from './fiber'
 import {Container} from 'hostConfig'
 import {scheduleUpdateOnFiber} from './workLoop'
 import {requestUpdateLane} from './fiberLanes'
+import {unstable_ImmediatePriority, unstable_runWithPriority} from 'scheduler'
 
 /**
  * ReactDom.createRoot(rootElement).render(<App/>)
@@ -32,14 +33,22 @@ export function updateContainer(
 	element: ReactElementType | null,
 	root: FiberRootNode
 ) {
-	const hostRootFiber = root.current
-	const lane = requestUpdateLane()
-	const update = createUpdate<ReactElementType | null>(element, lane)
-	enqueueUpdate(
-		hostRootFiber.updateQueue as UpdateQueue<ReactElementType | null>,
-		update
-	)
-	// 调度 workLoop中
-	scheduleUpdateOnFiber(hostRootFiber, lane)
+	/**
+	 * React18 默认启用同步更新
+	 * 使用并发特性后的那次更新启用并发更新
+	 * 这里使用runWithPriority同步优先级调度
+	 * */
+	unstable_runWithPriority(unstable_ImmediatePriority, () => {
+		const hostRootFiber = root.current
+		const lane = requestUpdateLane()
+		const update = createUpdate<ReactElementType | null>(element, lane)
+		enqueueUpdate(
+			hostRootFiber.updateQueue as UpdateQueue<ReactElementType | null>,
+			update
+		)
+		// 调度 workLoop中
+		scheduleUpdateOnFiber(hostRootFiber, lane)
+	})
+
 	return element
 }
