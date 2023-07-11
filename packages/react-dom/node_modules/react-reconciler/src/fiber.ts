@@ -129,13 +129,14 @@ export function createWorkInProgress(current: FiberNode, pendingProps: Props) {
 	wip.child = current.child
 	wip.memoizedProps = current.memoizedProps
 	wip.memoizedState = current.memoizedState
+	wip.ref = current.ref
 
 	return wip
 }
 
 //	根据element创建一个Fiber
 export function createFiberFromElement(element: ReactElementType) {
-	const {type, key, props} = element
+	const {type, key, props, ref} = element
 	let fiberTag: WorkTag = FunctionComponent
 	// 比如<div>xxx</div>这种 typeof就是 'div' 的string
 	if (typeof type === 'string') {
@@ -145,6 +146,8 @@ export function createFiberFromElement(element: ReactElementType) {
 	}
 	const fiber = new FiberNode(fiberTag, props, key)
 	fiber.type = type
+	fiber.ref = ref
+
 	return fiber
 }
 export function createFiberFromFragment(elements: any[], key: Key): FiberNode {

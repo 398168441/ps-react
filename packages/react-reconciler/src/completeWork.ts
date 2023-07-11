@@ -1,4 +1,4 @@
-import {NoFlags, Update} from './fiberFlags'
+import {NoFlags, Ref, Update} from './fiberFlags'
 import {
 	appendInitialChild,
 	Container,
@@ -25,6 +25,10 @@ const markUpdate = (fiber: FiberNode) => {
 	fiber.flags |= Update
 }
 
+function markRef(fiber: FiberNode) {
+	fiber.flags |= Ref
+}
+
 export const completeWork = (wip: FiberNode) => {
 	const newProps = wip.pendingProps
 	const current = wip.alternate
@@ -40,6 +44,9 @@ export const completeWork = (wip: FiberNode) => {
 				 */
 				// 暂时直接全部修改
 				updateFiberProps(wip.stateNode, newProps)
+				if (current.ref !== wip.ref) {
+					markRef(wip)
+				}
 			} else {
 				// mount 阶段
 				// 1、构建DOM
@@ -47,6 +54,9 @@ export const completeWork = (wip: FiberNode) => {
 				// 2、将DOM插入DOM树中
 				appendAllChildren(instance, wip)
 				wip.stateNode = instance
+				if (wip.ref !== null) {
+					markRef(wip)
+				}
 			}
 			bubbleProperties(wip)
 			return null

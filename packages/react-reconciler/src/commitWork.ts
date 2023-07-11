@@ -3,11 +3,13 @@ import {FiberNode, FiberRootNode, pendingPassiveEffects} from './fiber'
 import {
 	ChildDeletion,
 	Flags,
+	LayoutMask,
 	MutationMask,
 	NoFlags,
 	PassiveEffect,
 	PassiveMask,
 	Placement,
+	Ref,
 	Update
 } from './fiberFlags'
 import {
@@ -24,46 +26,87 @@ import {HookHasEffect} from './hookEffectTags'
 let nextEffect: FiberNode | null = null
 
 // commit 阶段数据突变的副作用处理
-export function commitMutationEffects(
-	finishedWork: FiberNode,
-	root: FiberRootNode
+export function commitEffects(
+	phrase: 'mutation' | 'layout',
+	mask: Flags,
+	callback: (fiber: FiberNode, root: FiberRootNode) => void
 ) {
-	nextEffect = finishedWork
+	return function (finishedWork: FiberNode, root: FiberRootNode) {
+		nextEffect = finishedWork
 
-	while (nextEffect !== null) {
-		// 向下遍历 一直找到没有subtreeFlags的节点结束 再往上遍历
-		const child: FiberNode | null = nextEffect.child
+		while (nextEffect !== null) {
+			// 向下遍历 一直找到没有subtreeFlags的节点结束 再往上遍历
+			const child: FiberNode | null = nextEffect.child
 
-		if (
-			(nextEffect.subtreeFlags & (MutationMask | PassiveMask)) !== NoFlags &&
-			child !== null
-		) {
-			//  存在【MutationMask】和【PassiveMask】的subtreeFlags就赋值给nextEffect 继续往下
-			nextEffect = child
-		} else {
-			/**
-			 * 要么到叶子节点了，要么不包含substreeFlags
-			 * 但是可能存在flags
-			 *  向上遍历 DFS 深度优先遍历
-			 */
-			up: while (nextEffect !== null) {
-				commitMutaitonEffectsOnFiber(nextEffect, root)
-				const sibling: FiberNode | null = nextEffect.sibling
-				if (sibling !== null) {
-					nextEffect = sibling
-					break up
+			if (
+				(nextEffect.subtreeFlags & (MutationMask | PassiveMask)) !== NoFlags &&
+				child !== null
+			) {
+				//  存在【MutationMask】和【PassiveMask】的subtreeFlags就赋值给nextEffect 继续往下
+				nextEffect = child
+			} else {
+				/**
+				 * 要么到叶子节点了，要么不包含substreeFlags
+				 * 但是可能存在flags
+				 *  向上遍历 DFS 深度优先遍历
+				 */
+				up: while (nextEffect !== null) {
+					callback(nextEffect, root)
+					const sibling: FiberNode | null = nextEffect.sibling
+					if (sibling !== null) {
+						nextEffect = sibling
+						break up
+					}
+					nextEffect = nextEffect.return
 				}
-				nextEffect = nextEffect.return
 			}
 		}
 	}
 }
 
-function commitMutaitonEffectsOnFiber(
+// commit 阶段数据突变的副作用处理
+export const commitMutationEffects = commitEffects(
+	'mutation',
+	MutationMask | PassiveMask,
+	commitMutationEffectsOnFiber
+)
+
+export const commitLayoutEffects = commitEffects(
+	'layout',
+	LayoutMask,
+	commitLayoutEffectsOnFiber
+)
+
+function commitLayoutEffectsOnFiber(
 	finishedWork: FiberNode,
 	root: FiberRootNode
 ) {
-	const flags = finishedWork.flags
+	const {flags, tag} = finishedWork
+	if ((flags & Ref) !== NoFlags && tag === HostComponent) {
+		//	绑定新的ref
+		safelyAttachRef(finishedWork)
+		finishedWork.flags &= ~Ref
+	}
+}
+
+//	绑定新的ref
+function safelyAttachRef(fiber: FiberNode) {
+	const ref = fiber.ref
+	if (ref !== null) {
+		const instance = fiber.stateNode
+		if (typeof ref === 'function') {
+			ref(instance)
+		} else {
+			ref.current = instance
+		}
+	}
+}
+
+function commitMutationEffectsOnFiber(
+	finishedWork: FiberNode,
+	root: FiberRootNode
+) {
+	const {flags, tag} = finishedWork
 	// 1、判断flags中包含Placement的副作用 则执行插入操作
 	if ((flags & Placement) !== NoFlags) {
 		commitPlacement(finishedWork)
@@ -97,6 +140,23 @@ function commitMutaitonEffectsOnFiber(
 		commitPassiveEffect(finishedWork, root, 'update')
 		//	收集结束要移除flags PassiveEffect
 		finishedWork.flags &= ~PassiveEffect
+	}
+
+	// 5、flags 中 Ref
+	if ((flags & Ref) !== NoFlags && tag === HostComponent) {
+		safelyDetachRef(finishedWork)
+	}
+}
+
+//	解绑之前ref
+function safelyDetachRef(fiber: FiberNode) {
+	const ref = fiber.ref
+	if (ref !== null) {
+		if (typeof ref === 'function') {
+			ref(null)
+		} else {
+			ref.current = null
+		}
 	}
 }
 
@@ -198,6 +258,10 @@ function recordHostChildrenToDelete(
 
 function commitChildDeletion(childToDeletion: FiberNode, root: FiberRootNode) {
 	/**
+	 * 考虑
+	 * HostComponent：需要遍历他的子树，为后续解绑ref创造条件，HostComponent本身只需删除最上层节点即可
+	 * FunctionComponent：effect相关hook的执行，并遍历子树
+	 *
 	 * 对于标记ChildDeletion的子树，由于子树中：
 	 * 1、对于FC，需要处理useEffect unmout执行、解绑ref
 	 * 2、对于HostComponent，需要解绑ref
@@ -212,13 +276,13 @@ function commitChildDeletion(childToDeletion: FiberNode, root: FiberRootNode) {
 		switch (unmountFiber.tag) {
 			case HostComponent:
 				recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber)
-				// todo 解绑ref
+				//	解绑ref
+				safelyDetachRef(unmountFiber)
 				return
 			case HostText:
 				recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber)
 				return
 			case FunctionComponent:
-				// todo 解绑ref
 				commitPassiveEffect(unmountFiber, root, 'unmount')
 				break
 			default:

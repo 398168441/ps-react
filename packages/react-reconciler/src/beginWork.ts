@@ -11,6 +11,7 @@ import {
 import {FiberNode} from './fiber'
 import {renderWithHooks} from './fiberHooks'
 import {Lane} from './fiberLanes'
+import {Ref} from './fiberFlags'
 
 /**
  * 递归中的递阶段
@@ -89,6 +90,7 @@ function updateHostComponent(wip: FiberNode) {
 	 * 这个 {childrend} 就是props里
 	 *  */
 	const nextChildren = wip.pendingProps.children
+	markRef(wip.alternate, wip)
 	reconcileChildren(wip, nextChildren)
 	return wip.child
 }
@@ -109,5 +111,16 @@ function reconcileChildren(wip: FiberNode, children: ReactElementType) {
 	} else {
 		//	mount
 		wip.child = mountChildFibers(wip, null, children)
+	}
+}
+
+//	标记Ref
+function markRef(current: FiberNode | null, workInProgress: FiberNode) {
+	const ref = workInProgress.ref
+	if (
+		(current === null && ref !== null) ||
+		(current !== null && current.ref !== ref)
+	) {
+		workInProgress.flags |= Ref
 	}
 }

@@ -22,6 +22,7 @@ import {
 	commitHookEffectListCreate,
 	commitHookEffectListDestroy,
 	commitHookEffectListUnmount,
+	commitLayoutEffects,
 	commitMutationEffects
 } from './commitWork'
 import {getHighestPriorityLane, Lane, mergeLanes} from './fiberLanes'
@@ -371,9 +372,11 @@ function commitRoot(root: FiberRootNode) {
 		// mutation
 		commitMutationEffects(finishedWork, root)
 
+		//	fiber树 current和workInProgress 切换
 		root.current = finishedWork
 
 		// layout
+		commitLayoutEffects(finishedWork, root)
 	} else {
 		// 切换FiberRootNode的current指针
 		// current指向最新的workInProgress Fiber树

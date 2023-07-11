@@ -97,13 +97,15 @@ export function renderWithHooks(wip: FiberNode, lane: Lane) {
 const HooksDispatcherOnMount: Dispatcher = {
 	useState: mountState,
 	useEffect: mountEffect,
-	useTransition: mountTransition
+	useTransition: mountTransition,
+	useRef: mountRef
 }
 
 const HooksDispatcherOnUpdate: Dispatcher = {
 	useState: updateState,
 	useEffect: updateEffect,
-	useTransition: updateTransition
+	useTransition: updateTransition,
+	useRef: updateRef
 }
 
 function mountEffect(create: EffectCallback | void, deps: EffectDeps | void) {
@@ -170,6 +172,18 @@ function areHookInputsEqual(nextDeps: EffectDeps, prevDeps: EffectDeps) {
 	}
 	//	遍历完全部相等 则返回true
 	return true
+}
+
+function mountRef<T>(initialValue: T): {current: T} {
+	const hook = mountWorkInProgresHook()
+	const ref = {current: initialValue}
+	hook.memoizedState = ref
+	return ref
+}
+
+function updateRef<T>(initialValue: T): {current: T} {
+	const hook = updateWorkInProgresHook()
+	return hook.memoizedState
 }
 
 /**
