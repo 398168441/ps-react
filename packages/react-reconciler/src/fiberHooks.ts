@@ -8,6 +8,7 @@ import {
 	createUpdateQueue,
 	enqueueUpdate,
 	processUpdateQueue,
+	Update,
 	UpdateQueue
 } from './updateQueue'
 import {Dispatcher, Dispatch} from 'react/src/currentDispatcher'
@@ -40,6 +41,8 @@ export interface Hook {
 	updateQueue: unknown
 	// 指向下一个hook
 	next: Hook | null
+	baseState: any
+	baseQueue: Update<any> | null
 }
 
 export interface Effect {
@@ -251,6 +254,7 @@ function mountState<State>(
 }
 
 /**
+ * 【重要】
  * 比如进入<App/>对应的FunctionComponent Fiber
  * function App() {
  * 		const [num, updateNum] = useState(0)
@@ -269,15 +273,35 @@ function updateState<State>(): [State, Dispatch<State>] {
 
 	// 计算hook
 	const queue = hook.updateQueue as UpdateQueue<State>
-	const update = queue.shared.pending
-	const baseState = hook.memoizedState
-	// update从queue.shared.pending中拿出来消费掉后要 重置
-	queue.shared.pending = null
+	const pending = queue.shared.pending
+	const baseState = hook.baseState
+	const current = currentHook as Hook
+	let baseQueue = current.baseQueue
 
-	if (update !== null) {
-		const {memoizedState} = processUpdateQueue(baseState, update, renderLane)
-		// 消费update后 计算出最新的状态 重新赋值给hook.memoizedState
-		hook.memoizedState = memoizedState
+	if (pending !== null) {
+		//	先把pending和baseQueue合并成环状链表 保存在current中
+		if (baseQueue !== null) {
+			const baseQueueFirst = baseQueue.next
+			const pendingFirst = pending.next
+			pending.next = baseQueueFirst
+			baseQueue.next = pendingFirst
+		}
+		baseQueue = pending
+		//	把环状链表保存在current中
+		current.baseQueue = pending
+		queue.shared.pending = null
+
+		if (baseQueue !== null) {
+			const {
+				memoizedState,
+				baseQueue: newBaseQueue,
+				baseState: newBaseState
+			} = processUpdateQueue(baseState, baseQueue, renderLane)
+			// 消费update后 计算出最新的状态 重新赋值给hook.memoizedState
+			hook.memoizedState = memoizedState
+			hook.baseQueue = newBaseQueue
+			hook.baseState = newBaseState
+		}
 	}
 
 	return [hook.memoizedState, queue.dispatch as Dispatch<State>]
@@ -309,7 +333,9 @@ function mountWorkInProgresHook() {
 	const hook: Hook = {
 		memoizedState: null,
 		updateQueue: null,
-		next: null
+		next: null,
+		baseQueue: null,
+		baseState: null
 	}
 
 	if (workInProgressHook === null) {
@@ -366,9 +392,12 @@ function updateWorkInProgresHook() {
 
 	currentHook = nextCurrentHook
 	const newHook: Hook = {
-		memoizedState: nextCurrentHook?.memoizedState,
-		updateQueue: nextCurrentHook?.updateQueue,
-		next: null
+		memoizedState: currentHook?.memoizedState,
+		updateQueue: currentHook?.updateQueue,
+		next: null,
+		//	从current中恢复 baseQueue、baseState
+		baseQueue: currentHook.baseQueue,
+		baseState: currentHook.baseState
 	}
 
 	if (workInProgressHook === null) {

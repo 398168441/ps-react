@@ -48,6 +48,17 @@ export function getHighestPriorityLane(lanes: Lanes): Lane {
 	return lanes & -lanes
 }
 
+/**
+ * 比较一个Lane是否在Lanes中
+ * 如果在其中表示优先级足够
+ * 不在则不够
+ * 取交集的方式
+ */
+export function isSubsetOfLanes(set: Lanes, subSet: Lane) {
+	//	取的交集全等于Lane 则是包含其中 优先级足够
+	return (set & subSet) === subSet
+}
+
 //	从root的pendingLanes即未被消费的Lanes 中移除本次消费的lane
 export function markRootFinished(root: FiberRootNode, lane: Lane) {
 	root.pendingLanes &= ~lane
