@@ -104,11 +104,15 @@ function ensureRootIsScheduled(root: FiberRootNode) {
 
 	let newCallbackNode = null
 
+	if (__DEV__) {
+		console.warn(
+			`在${updateLane === SyncLane ? '微' : '宏'}任务中调度，优先级`,
+			updateLane
+		)
+	}
+
 	if (updateLane === SyncLane) {
 		//	同步优先级 用微任务调度 调度什么呢 肯定是调度render阶段的执行
-		if (__DEV__) {
-			console.warn('在微任务中调度，优先级', updateLane)
-		}
 		/**
 		 * scheduleSyncCallback会把rendeer阶段的开始函数存在syncQueue里 每触发一次更新就会往里push一个
 		 * 像这样 [performSyncWorkOnRoot, performSyncWorkOnRoot, performSyncWorkOnRoot]
@@ -188,7 +192,7 @@ function performConcurrentWorkOnRoot(
 	const needSync = lane === SyncLane || didTimeout
 
 	//	render阶段
-	const exitStatus = renderRoot(root, lane, !needSync)
+	const exitStatus: RootExitStatus = renderRoot(root, lane, !needSync)
 
 	ensureRootIsScheduled(root)
 
@@ -240,7 +244,7 @@ function performSyncWorkOnRoot(root: FiberRootNode) {
 		return
 	}
 
-	const exitStatus = renderRoot(root, nextLane, false)
+	const exitStatus: RootExitStatus = renderRoot(root, nextLane, false)
 
 	//	3、render阶段完成
 	if (exitStatus === RootCompleted) {

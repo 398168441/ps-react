@@ -1,3 +1,4 @@
+import internals from 'shared/internals'
 import {
 	unstable_getCurrentPriorityLevel,
 	unstable_IdlePriority,
@@ -16,12 +17,13 @@ export type Lanes = number // 代表一个优先级的集合
  * 用二进制的话 可以通过 mergeLanes 的按位或 | 合并两个二进制
  */
 // 对应的Lane越小 优先级越高 但是0是没有优先级
-export const SyncLane = /*   			 */ 0b0001
-export const NoLanes = /*    			 */ 0b0000
-export const NoLane = /*     			 */ 0b0000
-export const InputContinuousLane = /*    */ 0b0010 //	连续输入
-export const DefaultLane = /*			 */ 0b0100
-export const IdleLane = /*				 */ 0b1000
+export const SyncLane = /*   			 */ 0b00001
+export const NoLanes = /*    			 */ 0b00000
+export const NoLane = /*     			 */ 0b00000
+export const InputContinuousLane = /*    */ 0b00010 //	连续输入
+export const DefaultLane = /*			 */ 0b00100
+export const TransitionLane = /*		 */ 0b01000
+export const IdleLane = /*				 */ 0b10000
 
 export function mergeLanes(laneA: Lane, laneB: Lane) {
 	return laneA | laneB
@@ -32,7 +34,12 @@ export function mergeLanes(laneA: Lane, laneB: Lane) {
  * 不同的事件产生的更新的优先级是不同的
  */
 export function requestUpdateLane() {
-	//  根据不同上下文 返回不同的优先级
+	//	如果正在进入useTransition 则返回TransitionLane
+	const isTransition = internals.ReactConcurrentBatchConfig.transition
+	if (isTransition) {
+		return TransitionLane
+	}
+	//根据不同上下文 获取调度器的优先级
 	const currentSchedulerPriority = unstable_getCurrentPriorityLevel()
 	const lane = schedulerPriorityToLane(currentSchedulerPriority)
 	return lane

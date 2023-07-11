@@ -31,7 +31,7 @@ let currentHook: Hook | null = null
 
 let renderLane = NoLane
 
-const {currentDispatcher} = internals
+const {currentDispatcher, ReactConcurrentBatchConfig} = internals
 
 // 满足所有hook的类型 useState useCallback useEffect...
 export interface Hook {
@@ -96,12 +96,14 @@ export function renderWithHooks(wip: FiberNode, lane: Lane) {
 
 const HooksDispatcherOnMount: Dispatcher = {
 	useState: mountState,
-	useEffect: mountEffect
+	useEffect: mountEffect,
+	useTransition: mountTransition
 }
 
 const HooksDispatcherOnUpdate: Dispatcher = {
 	useState: updateState,
-	useEffect: updateEffect
+	useEffect: updateEffect,
+	useTransition: updateTransition
 }
 
 function mountEffect(create: EffectCallback | void, deps: EffectDeps | void) {
@@ -243,6 +245,7 @@ function mountState<State>(
 	hook.updateQueue = queue
 	// 把计算出来的memoizedState保存在当前hook中 update时才有上一次的值
 	hook.memoizedState = memoizedState
+	hook.baseState = memoizedState
 
 	// 这里dispatchSetState通过函数柯里化或者叫偏函数的方式把当前Fiber和updateQueue两个参数预置进dispacth
 	// 这样dispatch就可以脱离当前组件去使用 用户只需要传 Action<State> 就行了 比如：updateNum(x) | updateNum(x=>2x)
@@ -290,21 +293,64 @@ function updateState<State>(): [State, Dispatch<State>] {
 		//	把环状链表保存在current中
 		current.baseQueue = pending
 		queue.shared.pending = null
-
-		if (baseQueue !== null) {
-			const {
-				memoizedState,
-				baseQueue: newBaseQueue,
-				baseState: newBaseState
-			} = processUpdateQueue(baseState, baseQueue, renderLane)
-			// 消费update后 计算出最新的状态 重新赋值给hook.memoizedState
-			hook.memoizedState = memoizedState
-			hook.baseQueue = newBaseQueue
-			hook.baseState = newBaseState
-		}
+	}
+	if (baseQueue !== null) {
+		const {
+			memoizedState,
+			baseQueue: newBaseQueue,
+			baseState: newBaseState
+		} = processUpdateQueue(baseState, baseQueue, renderLane)
+		// 消费update后 计算出最新的状态 重新赋值给hook.memoizedState
+		hook.memoizedState = memoizedState
+		hook.baseQueue = newBaseQueue
+		hook.baseState = newBaseState
 	}
 
 	return [hook.memoizedState, queue.dispatch as Dispatch<State>]
+}
+
+/**
+ * useTransition 包含两个hook 1.useState 2.本身对应的hook
+ * useState用来修改isPending状态
+ * callback是TransitionLane优先级的更新
+ *
+ */
+function mountTransition(): [boolean, (callback: () => void) => void] {
+	/**
+	 * 1.先创建一个useState
+	 * 2.获取本身当前的hook
+	 */
+	const [isPending, setPending] = mountState(false)
+	const hook = mountWorkInProgresHook()
+	const start = startTransition.bind(null, setPending)
+	hook.memoizedState = start
+	return [isPending, start]
+}
+
+function updateTransition(): [boolean, (callback: () => void) => void] {
+	const [isPending] = updateState()
+	const hook = updateWorkInProgresHook()
+	const start = hook.memoizedState
+	return [isPending as boolean, start]
+}
+
+function startTransition(setPending: Dispatch<boolean>, callback: () => void) {
+	//	先触发一个高优先级的更新
+	setPending(true)
+	const prevTransition = ReactConcurrentBatchConfig.transition
+	/**
+	 * 1.修改优先级
+	 * 当前进入了一个useTransition
+	 */
+	ReactConcurrentBatchConfig.transition = 1
+
+	callback()
+	setPending(false)
+
+	/**
+	 * 改回优先级
+	 */
+	ReactConcurrentBatchConfig.transition = prevTransition
 }
 
 /**
