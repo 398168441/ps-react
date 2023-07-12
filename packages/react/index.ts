@@ -5,6 +5,7 @@ import currentDispatcher, {
 } from './src/currentDispatcher'
 import ReactConcurrentBatchConfig from './src/currentBatchConfig'
 import {jsxDEV, jsx, isValidElement as isValidElementFn} from './src/jsx'
+export {createContext} from './src/context'
 
 /**
  * 这里暴露出去的useState就是 当前使用的hooks的集合中的useState
@@ -29,6 +30,11 @@ export const useTransition: Dispatcher['useTransition'] = () => {
 export const useRef: Dispatcher['useRef'] = (initialValue) => {
 	const dispatcher = resolveDispatcher()
 	return dispatcher.useRef(initialValue)
+}
+
+export const useContext: Dispatcher['useContext'] = (context) => {
+	const dispatcher = resolveDispatcher()
+	return dispatcher.useContext(context)
 }
 
 // 内部数据共享层

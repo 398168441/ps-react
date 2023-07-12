@@ -6,12 +6,14 @@ import {
 	HostComponent,
 	HostText,
 	FunctionComponent,
-	Fragment
+	Fragment,
+	ContextProvider
 } from './workTags'
 import {FiberNode} from './fiber'
 import {renderWithHooks} from './fiberHooks'
 import {Lane} from './fiberLanes'
 import {Ref} from './fiberFlags'
+import {pushProvider} from './fiberContext'
 
 /**
  * 递归中的递阶段
@@ -34,6 +36,8 @@ export const beginWork = (wip: FiberNode, renderLane: Lane) => {
 			return updateFunctionComponent(wip, renderLane)
 		case Fragment:
 			return updateFragment(wip)
+		case ContextProvider:
+			return updateContextProvider(wip)
 		default:
 			if (__DEV__) {
 				console.warn('beginWork未实现的类型')
@@ -42,6 +46,29 @@ export const beginWork = (wip: FiberNode, renderLane: Lane) => {
 	}
 
 	return null
+}
+
+/**
+ * 如果shouldComponentUpdate为false，如何感知子孙组件中有Context Consume???
+ * react 会执行 bailout 优化
+ *
+ * 在react中会向下遍历子孙节点
+ * 从这个provider向下找到消费了这个context的组件
+ * 找到了会依次向上标记存在context变化
+ *
+ * 标记后就不会执行bailout性能优化 依然继续执行beginWork
+ *
+ */
+function updateContextProvider(wip: FiberNode) {
+	const providerType = wip.type
+	const context = providerType._context
+	const newProps = wip.pendingProps
+
+	pushProvider(context, newProps.value)
+
+	const nextChildren = newProps.children
+	reconcileChildren(wip, nextChildren)
+	return wip.child
 }
 
 function updateFragment(wip: FiberNode) {

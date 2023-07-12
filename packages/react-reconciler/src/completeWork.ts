@@ -10,7 +10,8 @@ import {
 	HostText,
 	HostRoot,
 	FunctionComponent,
-	Fragment
+	Fragment,
+	ContextProvider
 } from './workTags'
 /**
  * 递归中的归阶段
@@ -20,6 +21,7 @@ import {
  */
 import {FiberNode} from './fiber'
 import {updateFiberProps} from 'react-dom/src/SyntheticEvent'
+import {popProvider} from './fiberContext'
 
 const markUpdate = (fiber: FiberNode) => {
 	fiber.flags |= Update
@@ -83,6 +85,11 @@ export const completeWork = (wip: FiberNode) => {
 		case HostRoot:
 		case FunctionComponent:
 		case Fragment:
+			bubbleProperties(wip)
+			return null
+		case ContextProvider:
+			const context = wip.type._context
+			popProvider(context)
 			bubbleProperties(wip)
 			return null
 		default:

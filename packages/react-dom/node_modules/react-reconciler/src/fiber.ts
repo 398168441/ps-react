@@ -1,8 +1,15 @@
+import {REACT_PROVIDER_TYPE} from 'shared/ReactSymbols'
 import {ReactElementType} from 'shared/ReactTypes'
 import {Props, Key, Ref} from 'shared/ReactTypes'
 import {Container} from 'hostConfig'
 
-import {FunctionComponent, WorkTag, HostComponent, Fragment} from './workTags'
+import {
+	FunctionComponent,
+	WorkTag,
+	HostComponent,
+	Fragment,
+	ContextProvider
+} from './workTags'
 import {Flags, NoFlags} from './fiberFlags'
 import {Lane, Lanes, NoLane, NoLanes} from './fiberLanes'
 import {Effect} from './fiberHooks'
@@ -141,6 +148,11 @@ export function createFiberFromElement(element: ReactElementType) {
 	// 比如<div>xxx</div>这种 typeof就是 'div' 的string
 	if (typeof type === 'string') {
 		fiberTag = HostComponent
+	} else if (
+		typeof type === 'object' &&
+		type.$$typeof === REACT_PROVIDER_TYPE
+	) {
+		fiberTag = ContextProvider
 	} else if (typeof type !== 'function' && __DEV__) {
 		console.warn('为定义的type类型', element)
 	}
