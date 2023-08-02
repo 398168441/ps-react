@@ -115,7 +115,7 @@ function ensureRootIsScheduled(root: FiberRootNode) {
 	if (updateLane === SyncLane) {
 		//	同步优先级 用微任务调度 调度什么呢 肯定是调度render阶段的执行
 		/**
-		 * scheduleSyncCallback会把rendeer阶段的开始函数存在syncQueue里 每触发一次更新就会往里push一个
+		 * scheduleSyncCallback会把render阶段的开始函数存在syncQueue里 每触发一次更新就会往里push一个
 		 * 像这样 [performSyncWorkOnRoot, performSyncWorkOnRoot, performSyncWorkOnRoot]
 		 */
 		//	@ts-ignore
