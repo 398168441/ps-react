@@ -118,6 +118,7 @@ function ensureRootIsScheduled(root: FiberRootNode) {
 		 * scheduleSyncCallback会把rendeer阶段的开始函数存在syncQueue里 每触发一次更新就会往里push一个
 		 * 像这样 [performSyncWorkOnRoot, performSyncWorkOnRoot, performSyncWorkOnRoot]
 		 */
+		//	@ts-ignore
 		scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root, updateLane))
 		// 然后在微任务中执行每一个syncQueue中的callback
 		scheduleMicroTask(flushSyncCallbacks)

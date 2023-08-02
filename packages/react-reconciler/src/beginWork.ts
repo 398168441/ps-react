@@ -87,8 +87,13 @@ function updateFunctionComponent(wip: FiberNode, renderLane: Lane) {
  * HostRoot的beginWork流程
  * 1、计算状态的最新值
  * 2、创造子FiberNode
- * ??? 为什么HostRoot会存在updateQueue
+ *
+ * HostRoot 其实就是 ReactDom.createRoot(rootElement).render(<App/>)中这个rootElement
+ * 这个rootElement的子节点就是<App/>
+ * diff比较的就是旧fiber和jsx 生成新fiber
+ * 所以这里调用reconcileChildren比较rootElement的子节点<App/>对应的jsx和<App/>的旧Fiber 生成新的<App/>的新fiber
  */
+// 其实这里就是生成<App/>的新fiber
 function updateHostRoot(wip: FiberNode, renderLane: Lane) {
 	const baseState = wip.memoizedState
 	const updateQueue = wip.updateQueue as UpdateQueue<Element>

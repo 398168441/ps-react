@@ -1,4 +1,4 @@
-import {useState, createContext, useContext} from 'react'
+import React, {useState, createContext, useContext} from 'react'
 import ReactDOM from 'react-dom/client'
 
 const ctxA = createContext('deafult A')

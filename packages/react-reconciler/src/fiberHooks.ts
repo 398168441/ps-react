@@ -36,6 +36,9 @@ const {currentDispatcher, ReactConcurrentBatchConfig} = internals
 // 满足所有hook的类型 useState useCallback useEffect...
 export interface Hook {
 	// 对于不同hook memoizedState 保存不同的状态
+	// 对于useState memoizedState保存状态
+	//	对于useEffect memoizedState保存的是一个Effect
+	//	useRef memoizedState保存{current: initialValue}
 	memoizedState: any
 	// 能触发更新
 	updateQueue: unknown
