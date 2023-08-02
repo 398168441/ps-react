@@ -60,7 +60,11 @@ export class FiberNode {
 		this.pendingProps = pendingProps //	工作开始时的props
 		this.memoizedProps = null //	工作完成后的props
 		this.memoizedState = null // 对于FunctionComponent的memoizedState 指向hoosk链表(以链表的数据结构保存hooks)
-		this.updateQueue = null // 对于FunctionComponent的updateQueue 用来保存useEffect副作用的环状链表
+		/**
+		 *  对于FunctionComponent的updateQueue 用来保存useEffect副作用的环状链表
+		 * 	对于HostComponent的updateQueue 以数组的形式保存，DOM的属性，[n, n+1] 第n项是属性名，n+1项是属性值。最后在commit阶段依据update flag去更新这个DOM的属性
+		 */
+		this.updateQueue = null
 
 		this.alternate = null //	current <-> workInProgress
 		//	副作用
